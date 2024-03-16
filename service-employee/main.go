@@ -10,6 +10,10 @@ import (
 	"github.com/gofiber/fiber/v2"
 )
 
+func init() {
+	config.NewDb()
+}
+
 func main() {
 	app := fiber.New()
 	db := config.GetPostgresDB()
@@ -18,8 +22,8 @@ func main() {
 		return c.SendString("Hi from service-employee")
 	})
 
-	empRepo := repository.NewEmployeeRepositoryImpl()
-	empService := service.NewEmployeeService(empRepo, db)
+	empRepo := repository.NewEmployeeRepositoryImpl(db)
+	empService := service.NewEmployeeServiceImpl(empRepo)
 	empController := controller.NewEmployeeControllerImpl(empService)
 	app.Post("/employee", empController.CreateEmployee)
 

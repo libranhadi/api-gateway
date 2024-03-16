@@ -8,21 +8,22 @@ import (
 )
 
 type EmployeeRepository interface {
-	Create(employee *model.Employee, db *sql.DB) error
+	Create(employee *model.Employee) error
 }
 
 type employeeRepositoryImpl struct {
+	db *sql.DB
 }
 
-func NewEmployeeRepositoryImpl() EmployeeRepository {
-	return &employeeRepositoryImpl{}
+func NewEmployeeRepositoryImpl(db *sql.DB) EmployeeRepository {
+	return &employeeRepositoryImpl{db: db}
 }
 
-func (empRepo *employeeRepositoryImpl) Create(employee *model.Employee, db *sql.DB) error {
+func (empRepo *employeeRepositoryImpl) Create(employee *model.Employee) error {
 	query := "INSERT INTO employees (name) VALUES ($1)"
 	ctx, cancel := config.NewPostgresContext()
 	defer cancel()
-	_, errExec := db.ExecContext(ctx, query, &employee.Name)
+	_, errExec := empRepo.db.ExecContext(ctx, query, &employee.Name)
 	if errExec != nil {
 		// return errors.New("error, creating employee")
 		return fmt.Errorf("error, create employee %w", errExec)

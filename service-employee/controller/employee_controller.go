@@ -29,7 +29,17 @@ func NewEmployeeControllerImpl(empService service.EmployeeService) EmployeeContr
 func (empController *employeeControllerImpl) CreateEmployee(c *fiber.Ctx) error {
 	requestBody := new(model.Employee)
 
-	resp, err := empController.employeeService.ConnectUserService(user_uri, c)
+	if err := c.BodyParser(requestBody); err != nil {
+		return c.JSON(&helpers.WebResponse{
+			Code:    http.StatusBadRequest,
+			Status:  "Bad Request",
+			Message: "Invalid data request",
+		})
+	}
+
+	access_token := c.Get("access_token")
+
+	resp, err := empController.employeeService.ConnectUserService(user_uri, access_token)
 
 	if err != nil {
 		webResponse, ok := err.(*helpers.WebResponse)
@@ -57,7 +67,7 @@ func (empController *employeeControllerImpl) CreateEmployee(c *fiber.Ctx) error 
 		})
 	}
 
-	errCreate := empController.employeeService.Create(requestBody, c)
+	errCreate := empController.employeeService.CreateEmployee(requestBody)
 	if errCreate != nil {
 		webResponse, ok := errCreate.(*helpers.WebResponse)
 		if ok {

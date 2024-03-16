@@ -1,40 +1,27 @@
 package service
 
 import (
-	"database/sql"
 	"net/http"
 	"service-employee/model"
 
 	"service-employee/helpers"
 	"service-employee/repository"
-
-	"github.com/gofiber/fiber/v2"
 )
 
 type EmployeeService interface {
-	Create(employee *model.Employee, c *fiber.Ctx) error
-	ConnectUserService(user_uri string, c *fiber.Ctx) (*http.Response, error)
+	CreateEmployee(employee *model.Employee) error
+	ConnectUserService(user_uri string, access_token string) (*http.Response, error)
 }
 
 type employeeServiceImpl struct {
 	employeeRepository repository.EmployeeRepository
-	db                 *sql.DB
 }
 
-func NewEmployeeService(repository repository.EmployeeRepository, db *sql.DB) EmployeeService {
-	return &employeeServiceImpl{employeeRepository: repository, db: db}
+func NewEmployeeServiceImpl(repository repository.EmployeeRepository) EmployeeService {
+	return &employeeServiceImpl{employeeRepository: repository}
 }
 
-func (employeeService *employeeServiceImpl) Create(employee *model.Employee, c *fiber.Ctx) error {
-
-	if err := c.BodyParser(employee); err != nil {
-		return c.JSON(&helpers.WebResponse{
-			Code:    http.StatusBadRequest,
-			Status:  "Bad Request",
-			Message: "Invalid data request",
-		})
-	}
-
+func (employeeService *employeeServiceImpl) CreateEmployee(employee *model.Employee) error {
 	if err := employee.Validate(); err != nil {
 		return &helpers.WebResponse{
 			Code:    http.StatusBadRequest,
@@ -44,12 +31,11 @@ func (employeeService *employeeServiceImpl) Create(employee *model.Employee, c *
 		}
 	}
 
-	return employeeService.employeeRepository.Create(employee, employeeService.db)
+	return employeeService.employeeRepository.Create(employee)
 }
 
-func (employeeService *employeeServiceImpl) ConnectUserService(user_uri string, c *fiber.Ctx) (*http.Response, error) {
+func (employeeService *employeeServiceImpl) ConnectUserService(user_uri string, access_token string) (*http.Response, error) {
 
-	access_token := c.Get("access_token")
 	if len(access_token) == 0 {
 		return nil, &helpers.WebResponse{
 			Code:    http.StatusUnauthorized,
