@@ -1,7 +1,6 @@
 package middleware
 
 import (
-	"database/sql"
 	"fmt"
 	"net/http"
 	"service-user/helpers"
@@ -16,11 +15,10 @@ type Auth interface {
 
 type authImpl struct {
 	userRepository repository.UserRepository
-	db             *sql.DB
 }
 
-func NewAuthImpl(repository repository.UserRepository, db *sql.DB) Auth {
-	return &authImpl{userRepository: repository, db: db}
+func NewAuthImpl(repository repository.UserRepository) Auth {
+	return &authImpl{userRepository: repository}
 }
 
 func (auth *authImpl) Authentication(c *fiber.Ctx) error {
@@ -47,7 +45,7 @@ func (auth *authImpl) Authentication(c *fiber.Ctx) error {
 		})
 	}
 
-	user, err := auth.userRepository.FindUserByEmail(email, auth.db)
+	user, err := auth.userRepository.FindUserByEmail(email)
 	if err != nil {
 		return c.Status(http.StatusInternalServerError).JSON(&helpers.WebResponse{
 			Code:    http.StatusInternalServerError,

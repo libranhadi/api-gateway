@@ -12,12 +12,17 @@ import (
 	"github.com/gofiber/fiber/v2"
 )
 
+func init() {
+	config.NewDb()
+}
+
 func main() {
+
 	db := config.GetPostgresDB()
-	userRepo := repository.NewUserRepositoryImpl()
-	userService := service.NewUserServiceImpl(userRepo, db)
+	userRepo := repository.NewUserRepositoryImpl(db)
+	userService := service.NewUserServiceImpl(userRepo)
 	userController := controller.NewUserControllerImpl(userService)
-	middleware := middleware.NewAuthImpl(userRepo, db)
+	middleware := middleware.NewAuthImpl(userRepo)
 	app := fiber.New()
 	app.Get("/", func(c *fiber.Ctx) error {
 		return c.SendString("Hi from service-user")

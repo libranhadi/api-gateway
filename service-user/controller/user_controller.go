@@ -29,7 +29,15 @@ func NewUserControllerImpl(userService service.UserService) UserController {
 func (uc *userControllerImpl) Register(c *fiber.Ctx) error {
 	requestBody := new(model.User)
 
-	err := uc.userService.Register(requestBody, c)
+	if err := c.BodyParser(requestBody); err != nil {
+		return c.JSON(&helpers.WebResponse{
+			Code:    http.StatusBadRequest,
+			Status:  "Bad Request",
+			Message: "Invalid data request",
+		})
+	}
+
+	err := uc.userService.Register(requestBody)
 
 	if err != nil {
 		webResponse, ok := err.(*helpers.WebResponse)
@@ -53,8 +61,15 @@ func (uc *userControllerImpl) Register(c *fiber.Ctx) error {
 
 func (uc *userControllerImpl) Login(c *fiber.Ctx) error {
 	requestBody := new(model.User)
+	if err := c.BodyParser(requestBody); err != nil {
+		return c.JSON(&helpers.WebResponse{
+			Code:    http.StatusBadRequest,
+			Status:  "Bad Request",
+			Message: "Invalid data request",
+		})
+	}
 	var result model.User
-	_, err := uc.userService.Login(requestBody, c)
+	_, err := uc.userService.Login(requestBody)
 
 	if err != nil {
 		webResponse, ok := err.(*helpers.WebResponse)

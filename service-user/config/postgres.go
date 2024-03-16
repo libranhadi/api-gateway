@@ -11,7 +11,7 @@ import (
 
 var db *sql.DB
 
-func init() {
+func NewDb() {
 	connectionString := "postgres://postgres:postgres@postgresql:5432/service_users?sslmode=disable"
 	count := 0
 	for {

@@ -16,8 +16,8 @@ func (repoMock *UserRepositoryMock) FindUserByEmail(email string) (*model.User, 
 	if args.Get(0) == nil {
 		return nil, errors.New("user not found")
 	}
-	user := args.Get(0).(model.User)
-	return &user, nil
+	user := args.Get(0).(*model.User)
+	return user, nil
 }
 
 func (repoMock *UserRepositoryMock) Create(user *model.User) error {

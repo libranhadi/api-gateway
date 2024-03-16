@@ -8,22 +8,23 @@ import (
 )
 
 type UserRepository interface {
-	Create(user *model.User, db *sql.DB) error
-	FindUserByEmail(email string, db *sql.DB) (*model.User, error)
+	Create(user *model.User) error
+	FindUserByEmail(email string) (*model.User, error)
 }
 
 type userRepositoryImpl struct {
+	db *sql.DB
 }
 
-func NewUserRepositoryImpl() UserRepository {
-	return &userRepositoryImpl{}
+func NewUserRepositoryImpl(db *sql.DB) UserRepository {
+	return &userRepositoryImpl{db: db}
 }
 
-func (userRepo *userRepositoryImpl) Create(user *model.User, db *sql.DB) error {
+func (userRepo *userRepositoryImpl) Create(user *model.User) error {
 	query := "INSERT INTO users (email, password) VALUES ($1,$2)"
 	ctx, cancel := config.NewPostgresContext()
 	defer cancel()
-	_, errExec := db.ExecContext(ctx, query, &user.Email, &user.Password)
+	_, errExec := userRepo.db.ExecContext(ctx, query, &user.Email, &user.Password)
 	if errExec != nil {
 		return errors.New("error, creating user")
 		// return fmt.Errorf("error, create user %w", errExec)
@@ -31,14 +32,14 @@ func (userRepo *userRepositoryImpl) Create(user *model.User, db *sql.DB) error {
 	return nil
 }
 
-func (userRepo *userRepositoryImpl) FindUserByEmail(email string, db *sql.DB) (*model.User, error) {
+func (userRepo *userRepositoryImpl) FindUserByEmail(email string) (*model.User, error) {
 	query := "SELECT id, password ,email FROM users WHERE email = $1"
 	ctx, cancel := config.NewPostgresContext()
 	defer cancel()
 
 	user := &model.User{}
 
-	rows, err := db.QueryContext(ctx, query, email)
+	rows, err := userRepo.db.QueryContext(ctx, query, email)
 	if err != nil {
 		return user, errors.New("error checking email existence")
 		// return user, fmt.Errorf("error checking email existence: %w", err)
