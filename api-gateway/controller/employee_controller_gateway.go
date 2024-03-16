@@ -9,7 +9,7 @@ import (
 	"github.com/gofiber/fiber/v2"
 )
 
-var employee_uri string = "http://localhost:3002"
+var employee_uri string = "http://service-employee:3002"
 
 type EmployeeBodyReq struct {
 	Name string `json:"name"`
@@ -70,10 +70,10 @@ func CreateEmployee(c *fiber.Ctx) error {
 	}
 
 	var res EmployeeResponse
-    err = json.Unmarshal(responseBody, &res)
-    if err != nil {
-        return err
-    }
+	err = json.Unmarshal(responseBody, &res)
+	if err != nil {
+		return err
+	}
 
-    return c.JSON(res)
+	return c.JSON(res)
 }

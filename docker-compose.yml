@@ -1,0 +1,61 @@
+version: '3.8'
+
+services:
+  api-gateway:
+    build:
+      context: ./api-gateway
+    ports:
+      - "3000:3000"
+    networks:
+      - api-gateway-network
+    depends_on:
+      - service-user
+      - service-employee
+    links:
+      - service-user
+      - service-employee
+
+  service-user:
+    build:
+      context: ./service-user
+    ports:
+      - "3001:3001"
+    networks:
+      - api-gateway-network
+    depends_on:
+      - postgresql
+
+  service-employee:
+    build:
+      context: ./service-employee
+    ports:
+      - "3002:3002"
+    networks:
+      - api-gateway-network
+    depends_on:
+      - postgresql
+      - service-user
+    links:
+      - service-user
+
+  postgresql:
+    container_name: psql_db_container
+    build:
+      context: ./postgres-init
+    ports:  
+      - 5432:5432
+    volumes:
+      - ./postgres_data:/var/lib/postgresql/data
+    networks:
+      - api-gateway-network
+    environment:
+      POSTGRES_USER: postgres
+      POSTGRES_PASSWORD: postgres
+    restart: always
+
+networks:
+  api-gateway-network:
+    driver: bridge
+
+volumes:
+  postgres_data: {}

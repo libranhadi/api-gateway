@@ -1,92 +1,89 @@
 package controller
 
 import (
-	"context"
-	"errors"
+	"net/http"
 	"service-user/helpers"
 	"service-user/model"
 
-	"service-user/config"
+	"service-user/service"
 
 	"github.com/gofiber/fiber/v2"
-	"github.com/google/uuid"
-	"go.mongodb.org/mongo-driver/bson"
 )
 
-type WebResponse struct {
-	Code int
-	Status string
-	Data interface{}
+type UserController interface {
+	Register(c *fiber.Ctx) error
+	Login(c *fiber.Ctx) error
+	Auth(c *fiber.Ctx) error
 }
 
-func Register(c *fiber.Ctx) error {
-	var requestBody model.User
-	db := config.GetMongoDatabase().Collection("user")
+type userControllerImpl struct {
+	userService service.UserService
+}
 
-	requestBody.Id = uuid.New().String()
+func NewUserControllerImpl(userService service.UserService) UserController {
+	return &userControllerImpl{
+		userService: userService,
+	}
+}
 
-	ctx, cancel := config.NewMongoContext()
-	defer cancel()
+func (uc *userControllerImpl) Register(c *fiber.Ctx) error {
+	requestBody := new(model.User)
 
-	c.BodyParser(&requestBody)
-
-	_, err := db.InsertOne(ctx, bson.M{
-		"email": requestBody.Email,
-		"password": helpers.HashPassword([]byte(requestBody.Password)),
-	})
+	err := uc.userService.Register(requestBody, c)
 
 	if err != nil {
-		panic(err)
+		webResponse, ok := err.(*helpers.WebResponse)
+		if ok {
+			return c.Status(webResponse.Code).JSON(webResponse)
+		} else {
+			return c.Status(http.StatusInternalServerError).JSON(&helpers.WebResponse{
+				Code:    http.StatusInternalServerError,
+				Status:  "Internal server error",
+				Message: "Sorry, something went wrong please try again later!",
+			})
+		}
+	} else {
+		return c.JSON(&helpers.WebResponse{
+			Code:   201,
+			Status: "OK",
+			Data:   requestBody.Email,
+		})
 	}
-
-	return c.JSON(WebResponse{
-		Code: 201,
-		Status: "OK",
-		Data: requestBody.Email,
-	})
 }
 
-func Login(c *fiber.Ctx) error {
-	db := config.GetMongoDatabase().Collection("user")
-
-	var requestBody model.User
+func (uc *userControllerImpl) Login(c *fiber.Ctx) error {
+	requestBody := new(model.User)
 	var result model.User
- 
-	c.BodyParser(&requestBody)
+	_, err := uc.userService.Login(requestBody, c)
 
-	err := db.FindOne(context.TODO(), bson.D{{"email", requestBody.Email}}).Decode(&result)
 	if err != nil {
-		return c.JSON(WebResponse{
-			Code: 401,
-			Status: "BAD_REQUEST",
-			Data: err.Error(),
-		})
-	}
-
-	checkPassword := helpers.ComparePassword([]byte(result.Password), []byte(requestBody.Password))
-	if !checkPassword {
-		return c.JSON(WebResponse{
-			Code: 401,
-			Status: "BAD_REQUEST",
-			Data: errors.New("invalid password").Error(),
-		})
+		webResponse, ok := err.(*helpers.WebResponse)
+		if ok {
+			return c.Status(webResponse.Code).JSON(webResponse)
+		} else {
+			return c.Status(http.StatusInternalServerError).JSON(&helpers.WebResponse{
+				Code:    http.StatusInternalServerError,
+				Status:  "Internal server error",
+				Message: "Sorry, something went wrong please try again later!",
+			})
+		}
 	}
 
 	access_token := helpers.SignToken(requestBody.Email)
 
-	return c.JSON(struct{
-		Code int 
-		Status string
+	return c.JSON(struct {
+		Code        int
+		Status      string
 		AccessToken string
-		Data interface{}
+		Data        interface{}
 	}{
-		Code: 200,
-		Status: "OK",
+		Code:        200,
+		Status:      "OK",
 		AccessToken: access_token,
-		Data: result,
+		Data:        result,
 	})
 }
 
-func Auth(c *fiber.Ctx) error {
+func (uc *userControllerImpl) Auth(c *fiber.Ctx) error {
 	return c.JSON("OK")
 }
